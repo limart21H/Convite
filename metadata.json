@@ -1,0 +1,11 @@
+{
+  "name": "Gestão de Convites - Independência Cabo Verde 2026",
+  "description": "Sistema de cadastro, emissão, controle de acesso e validação com QR Code para a Festa da Independência de Cabo Verde 2026.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

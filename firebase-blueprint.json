@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Convidado": {
+      "title": "Convidado",
+      "description": "Dados de um convidado para a Festa da Independência de Cabo Verde 2026",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID sequencial numérico ou UUID"
+        },
+        "uuid": {
+          "type": "string",
+          "description": "UUID de segurança único"
+        },
+        "nome": {
+          "type": "string",
+          "description": "Nome completo do convidado"
+        },
+        "telefone": {
+          "type": "string",
+          "description": "Número de telefone de contato"
+        },
+        "email": {
+          "type": "string",
+          "description": "E-mail cadastrado"
+        },
+        "cpf": {
+          "type": "string",
+          "description": "CPF formatado (000.000.000-00)"
+        },
+        "codigoAntifraude": {
+          "type": "string",
+          "description": "Código de 6 caracteres alfanuméricos"
+        },
+        "dataCadastro": {
+          "type": "string",
+          "description": "ISO String de data de cadastro"
+        },
+        "statusConvite": {
+          "type": "string",
+          "enum": ["Ativo", "Cancelado"],
+          "description": "Status do convite"
+        },
+        "statusEntrada": {
+          "type": "string",
+          "enum": ["Não utilizado", "Utilizado"],
+          "description": "Status de entrada no evento"
+        },
+        "horaEntrada": {
+          "type": "string",
+          "description": "ISO String de horário de entrada, ou null se não utilizado"
+        }
+      },
+      "required": ["id", "uuid", "nome", "telefone", "email", "cpf", "codigoAntifraude", "dataCadastro", "statusConvite", "statusEntrada"]
+    }
+  },
+  "firestore": {
+    "/convidados/{convidadoId}": {
+      "schema": "Convidado",
+      "description": "Inscrições e convites dos convidados do evento"
+    }
+  }
+}

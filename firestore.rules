@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /convidados/{convidadoId} {
+      
+      // Validation Blueprint (Pillar 2)
+      function isValidConvidado(data) {
+        return data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+          && data.uuid is string && data.uuid.size() >= 1 && data.uuid.size() <= 128
+          && data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 256
+          && data.telefone is string && data.telefone.size() >= 5 && data.telefone.size() <= 64
+          && data.email is string && data.email.size() >= 5 && data.email.size() <= 256
+          && data.cpf is string && data.cpf.size() == 14
+          && data.codigoAntifraude is string && data.codigoAntifraude.size() == 6
+          && data.dataCadastro is string
+          && (data.statusConvite == 'Ativo' || data.statusConvite == 'Cancelado')
+          && (data.statusEntrada == 'Não utilizado' || data.statusEntrada == 'Utilizado')
+          && (data.horaEntrada == null || data.horaEntrada is string);
+      }
+
+      function incoming() {
+        return request.resource.data;
+      }
+
+      function existing() {
+        return resource.data;
+      }
+
+      // 1. Create Action (Pillar 2 & 11)
+      allow create: if isValidConvidado(incoming())
+        // Avoid pre-validated accesses on creation (Anti-State-Shortcutting)
+        && incoming().statusConvite == 'Ativo'
+        && incoming().statusEntrada == 'Não utilizado'
+        && incoming().horaEntrada == null;
+
+      // 2. Read Action (PII Protection & Admin/Operator Access)
+      allow read: if true;
+
+      // 3. Update Action (Pillar 4 & 6)
+      allow update: if isValidConvidado(incoming())
+        && (
+          // Terminal integrity locks: owner or cpf can never change
+          incoming().uuid == existing().uuid &&
+          incoming().cpf == existing().cpf &&
+          incoming().email == existing().email
+        )
+        && (
+          // Action A: Operator check-in (only allowed to touch statusEntrada & horaEntrada & adminValidacao)
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['statusEntrada', 'horaEntrada', 'adminValidacao'])
+            && existing().statusConvite == 'Ativo'
+            && existing().statusEntrada == 'Não utilizado'
+            && incoming().statusEntrada == 'Utilizado'
+          )
+          ||
+          // Action B: General admin changes (can alter invite status, names, telephones etc.)
+          (
+            incoming().diff(existing()).affectedKeys().hasAny(['statusConvite', 'statusEntrada', 'horaEntrada', 'nome', 'telefone'])
+          )
+        );
+
+      // 4. Delete Action: System auditing record persistence (Audit block)
+      allow delete: if false;
+    }
+
+    match /logs_auditoria/{logId} {
+      function isValidLog(data) {
+        return data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+          && data.adminNome is string && data.adminNome.size() >= 1
+          && data.timestamp is string;
+      }
+      allow create: if isValidLog(request.resource.data);
+      allow read: if true;
+      allow update, delete: if false;
+    }
+  }
+}
